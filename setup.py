@@ -15,7 +15,7 @@ def read_file(path):
 
 AUTHOR = "Brian P Smith"
 AUTHOR_EMAIL = "brian.p.smith@gmail.com"
-PACKAGE = "tia3"
+PACKAGE = "tia"
 PACKAGE_DESC = "Toolkit for integration and analysis"
 VERSION = tia.__version__
 URL = "https://github.com/bpsmith/tia"

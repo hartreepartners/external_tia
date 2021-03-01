@@ -15,7 +15,7 @@ def read_file(path):
 
 AUTHOR = "Brian P Smith"
 AUTHOR_EMAIL = "brian.p.smith@gmail.com"
-PACKAGE = "tia"
+PACKAGE = "tia3"
 PACKAGE_DESC = "Toolkit for integration and analysis"
 VERSION = tia.__version__
 URL = "https://github.com/bpsmith/tia"
@@ -27,6 +27,8 @@ TIA is a toolkit that provides bloomberg data access, easier pdf generation, bac
 technical analysis functionality, and return analysis.
 """
 
+pakages = setuptools.find_packages()
+
 setuptools.setup(
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
@@ -35,16 +37,7 @@ setuptools.setup(
     install_requires=REQUIRED,
     long_description=LONG_DESC,
     name=PACKAGE,
-    packages=[
-        "tia",
-        "tia.analysis",
-        "tia.bbg",
-        "tia.rlab",
-        "tia.tests",
-        "tia.util",
-        "tia.analysis.model",
-    ],
-    package_dir={"tia": "tia"},
+    packages=setuptools.find_packages(),
     test_suite="tia.tests",
     tests_require=REQUIRED_FOR_TESTS,
     url=URL,

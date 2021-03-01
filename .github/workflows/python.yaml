@@ -1,0 +1,26 @@
+name: Python package
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7,3.8,3.9]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up tooling
+        run: |
+          python -m pip install --upgrade wheel setuptools pip twine
+      - name: Upload the wheel.
+        run: |
+          python setup.py bdist_wheel
+          python -m twine upload *.whl --repository-url https://push.fury.io/${REPO_NAME} -u ${AUTHENTICATION_TOKEN} -p "" --skip-existing --disable-progress-bar
+        env:
+          AUTHENTICATION_TOKEN: ${{secrets.EUNRG_GEMFURY_PUSH_KEY0}}
+          REPO_NAME: ${{secrets.EUNRG_REPO_NAME}}

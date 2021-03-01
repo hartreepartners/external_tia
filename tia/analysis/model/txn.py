@@ -7,7 +7,7 @@ from tia.analysis.model.ret import RoiiRetCalculator
 from tia.analysis.util import is_decrease, is_increase, crosses_zero
 
 
-__all__ = ['Intent', 'Action', 'iter_txns', 'Txns']
+__all__ = ["Intent", "Action", "iter_txns", "Txns"]
 
 
 class Intent(object):
@@ -17,10 +17,10 @@ class Intent(object):
     Decrease = 4
 
     Labels = {
-        Open: 'Open',
-        Close: 'Close',
-        Increase: 'Increase',
-        Decrease: 'Decrease',
+        Open: "Open",
+        Close: "Close",
+        Increase: "Increase",
+        Decrease: "Decrease",
     }
 
 
@@ -31,10 +31,10 @@ class Action(object):
     Cover = 4
 
     Labels = {
-        Buy: 'Buy',
-        Sell: 'Sell',
-        SellShort: 'SellShort',
-        Cover: 'Cover',
+        Buy: "Buy",
+        Sell: "Sell",
+        SellShort: "SellShort",
+        Cover: "Cover",
     }
 
 
@@ -68,8 +68,8 @@ class Txns(object):
         self._ret_calc = ret_calc or RoiiRetCalculator()
 
     pids = property(lambda self: self.frame[TC.PID].unique())
-    pl = lazy_property(lambda self: TxnProfitAndLoss(self), 'pl')
-    performance = lazy_property(lambda self: self.ret_calc.compute(self), 'performance')
+    pl = lazy_property(lambda self: TxnProfitAndLoss(self), "pl")
+    performance = lazy_property(lambda self: self.ret_calc.compute(self), "performance")
 
     @property
     def ret_calc(self):
@@ -78,8 +78,8 @@ class Txns(object):
     @ret_calc.setter
     def ret_calc(self, calc):
         self._ret_calc = calc
-        if hasattr(self, '_performance'):
-            delattr(self, '_performance')
+        if hasattr(self, "_performance"):
+            delattr(self, "_performance")
 
     @lazy_property
     def frame(self):
@@ -117,23 +117,55 @@ class Txns(object):
                 side = side
             else:  # decrease - no worries about split since iterator takes care of it
                 side = txn.qty > 0 and Action.Cover or Action.Sell
-                open_val *= ((pos + qty) / pos)
+                open_val *= (pos + qty) / pos
                 pos += qty
                 intent = Intent.Decrease
                 side = side
 
             # Get rid of anything but the date
-            dt = txn.ts.to_period('B').to_timestamp()
-            rows.append([dt, txn.ts, pid, txn.tid, txn.qty, txn.px, txn.fees, premium, open_val, pos, intent, side])
+            dt = txn.ts.to_period("B").to_timestamp()
+            rows.append(
+                [
+                    dt,
+                    txn.ts,
+                    pid,
+                    txn.tid,
+                    txn.qty,
+                    txn.px,
+                    txn.fees,
+                    premium,
+                    open_val,
+                    pos,
+                    intent,
+                    side,
+                ]
+            )
 
-        df = pd.DataFrame.from_records(rows, columns=[TC.DT, TC.TS, TC.PID, TC.TID, TC.QTY, TC.PX, TC.FEES, TC.PREMIUM,
-                                                      TC.OPEN_VAL, TC.POS, TC.INTENT, TC.ACTION])
-        df.index.name = 'seq'
+        df = pd.DataFrame.from_records(
+            rows,
+            columns=[
+                TC.DT,
+                TC.TS,
+                TC.PID,
+                TC.TID,
+                TC.QTY,
+                TC.PX,
+                TC.FEES,
+                TC.PREMIUM,
+                TC.OPEN_VAL,
+                TC.POS,
+                TC.INTENT,
+                TC.ACTION,
+            ],
+        )
+        df.index.name = "seq"
         return df
 
     def get_pid_txns(self, pid):
         pmask = self.frame[TC.PID] == pid
-        assert len(pmask.index) == len(self.trades), 'assume 1-1 ratio of trade to row in frame'
+        assert len(pmask.index) == len(
+            self.trades
+        ), "assume 1-1 ratio of trade to row in frame"
         return tuple(pd.Series(self.trades)[pmask.values])
 
     def subset(self, pids):
@@ -146,10 +178,7 @@ class Txns(object):
             # build the object
             result = Txns(trds, self.pricer, self.ret_calc)
             result._frame = self.frame.ix[pmask]
-            if hasattr(self, '_profit_and_loss'):
+            if hasattr(self, "_profit_and_loss"):
                 pl = self.profit_and_loss
                 result._profit_and_loss = pl.subset(result)
             return result
-
-
-

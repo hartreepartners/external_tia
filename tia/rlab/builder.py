@@ -1,5 +1,12 @@
-from reportlab.platypus import BaseDocTemplate, Paragraph, Frame, PageBreak, FrameBreak, NextPageTemplate, \
-    PageTemplate
+from reportlab.platypus import (
+    BaseDocTemplate,
+    Paragraph,
+    Frame,
+    PageBreak,
+    FrameBreak,
+    NextPageTemplate,
+    PageTemplate,
+)
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle, TA_CENTER
 from reportlab.lib import units
@@ -9,11 +16,18 @@ from tia.rlab.table import TableFormatter
 
 import numpy as np
 
-__all__ = ['CoverPage', 'GridFrame', 'GridTemplate', 'PdfBuilder']
+__all__ = ["CoverPage", "GridFrame", "GridTemplate", "PdfBuilder"]
 
 
 class CoverPage(object):
-    def __init__(self, title='Title', subtitle='Subtitle', subtitle2=None, font='Helvetica', logo_path=None):
+    def __init__(
+        self,
+        title="Title",
+        subtitle="Subtitle",
+        subtitle2=None,
+        font="Helvetica",
+        logo_path=None,
+    ):
         self.title = title
         self.subtitle = subtitle
         self.subtitle2 = subtitle2
@@ -27,20 +41,25 @@ class CoverPage(object):
         c.saveState()
         isletter = (w, h) == letter
         c.setFont(self.font, isletter and 16 or 20)
-        imgw, imgh = 2.83 * units.inch, .7 * units.inch
+        imgw, imgh = 2.83 * units.inch, 0.7 * units.inch
 
         c.drawString(25, h / 2 - 6, self.title)
         if self.logo_path:
-            c.drawImage(self.logo_path, w - imgw - 25,
-                        h / 2 - .5 * imgh, width=imgw, height=imgh,
-                        preserveAspectRatio=True)
+            c.drawImage(
+                self.logo_path,
+                w - imgw - 25,
+                h / 2 - 0.5 * imgh,
+                width=imgw,
+                height=imgh,
+                preserveAspectRatio=True,
+            )
         c.setFillColorRGB(0, 0, 0)
-        c.rect(0, h / 2 + .5 * imgh + 5, w, 1, fill=1)
-        c.rect(0, h / 2 - .5 * imgh - 5, w, 1, fill=1)
+        c.rect(0, h / 2 + 0.5 * imgh + 5, w, 1, fill=1)
+        c.rect(0, h / 2 - 0.5 * imgh - 5, w, 1, fill=1)
         c.setFontSize(isletter and 12 or 16)
-        c.drawString(25, h / 2 - .5 * imgh - 50, self.subtitle)
+        c.drawString(25, h / 2 - 0.5 * imgh - 50, self.subtitle)
         if self.subtitle2:
-            c.drawString(25, h / 2 - .5 * imgh - 70, self.subtitle2)
+            c.drawString(25, h / 2 - 0.5 * imgh - 70, self.subtitle2)
         c.restoreState()
 
 
@@ -51,10 +70,10 @@ def _to_points(ix, n):
     elif np.isscalar(ix):
         ix = (ix < 0 and ix + n) or ix
         if ix < 0 or ix >= n:
-            raise IndexError('index %s out of range (0, %s)' % (ix, n))
+            raise IndexError("index %s out of range (0, %s)" % (ix, n))
         return ix, ix + 1
     else:
-        raise Exception('invalid indexer type %s, expected slice or scalar' % type(ix))
+        raise Exception("invalid indexer type %s, expected slice or scalar" % type(ix))
 
 
 class GridFrame(object):
@@ -147,14 +166,28 @@ class PdfBuilder(object):
     def build_doc(cls, path, pagesize=None, showBoundary=1, allowSplitting=1, **dargs):
         if pagesize is None:
             pagesize = landscape(letter)
-        return BaseDocTemplate(path, pagesize=pagesize, showBoundary=showBoundary, allowSplitting=allowSplitting,
-                               **dargs)
+        return BaseDocTemplate(
+            path,
+            pagesize=pagesize,
+            showBoundary=showBoundary,
+            allowSplitting=allowSplitting,
+            **dargs
+        )
 
-    def __init__(self, doc_or_path, coverpage=None, pagesize=None, stylesheet=None, showBoundary=0):
+    def __init__(
+        self,
+        doc_or_path,
+        coverpage=None,
+        pagesize=None,
+        stylesheet=None,
+        showBoundary=0,
+    ):
         self.path = None
         if isinstance(doc_or_path, str):
             self.path = doc_or_path
-            doc = self.build_doc(doc_or_path, pagesize=pagesize, showBoundary=showBoundary)
+            doc = self.build_doc(
+                doc_or_path, pagesize=pagesize, showBoundary=showBoundary
+            )
 
         self.doc = doc
         self.pagesize = doc.pagesize
@@ -166,25 +199,47 @@ class PdfBuilder(object):
         self.stylesheet = stylesheet or getSampleStyleSheet()
         if inc_coverpage:
             # Allow user to override the cover page template
-            if not self.get_page_template('cover', err=0):
+            if not self.get_page_template("cover", err=0):
                 f = Frame(0, 0, self.width, self.height)
-                pt = PageTemplate(id='cover', frames=[f], onPage=coverpage.onPage)
+                pt = PageTemplate(id="cover", frames=[f], onPage=coverpage.onPage)
                 self.add_page_template(pt)
 
     def new_title_bar(self, title, color=None):
         """Return an array of Pdf Objects which constitute a Header"""
         # Build a title bar for top of page
-        w, t, c = '100%', 2, color or HexColor('#404040')
-        title = '<b>{0}</b>'.format(title)
-        if 'TitleBar' not in self.stylesheet:
-            tb = ParagraphStyle('TitleBar', parent=self.stylesheet['Normal'], fontName='Helvetica-Bold', fontSize=10,
-                                leading=10, alignment=TA_CENTER)
+        w, t, c = "100%", 2, color or HexColor("#404040")
+        title = "<b>{0}</b>".format(title)
+        if "TitleBar" not in self.stylesheet:
+            tb = ParagraphStyle(
+                "TitleBar",
+                parent=self.stylesheet["Normal"],
+                fontName="Helvetica-Bold",
+                fontSize=10,
+                leading=10,
+                alignment=TA_CENTER,
+            )
             self.stylesheet.add(tb)
-        return [HRFlowable(width=w, thickness=t, color=c, spaceAfter=2, vAlign='MIDDLE', lineCap='square'),
-                self.new_paragraph(title, 'TitleBar'),
-                HRFlowable(width=w, thickness=t, color=c, spaceBefore=2, vAlign='MIDDLE', lineCap='square')]
+        return [
+            HRFlowable(
+                width=w,
+                thickness=t,
+                color=c,
+                spaceAfter=2,
+                vAlign="MIDDLE",
+                lineCap="square",
+            ),
+            self.new_paragraph(title, "TitleBar"),
+            HRFlowable(
+                width=w,
+                thickness=t,
+                color=c,
+                spaceBefore=2,
+                vAlign="MIDDLE",
+                lineCap="square",
+            ),
+        ]
 
-    def new_paragraph(self, txt, style='Normal'):
+    def new_paragraph(self, txt, style="Normal"):
         s = self.stylesheet[style]
         return Paragraph(txt, style=self.stylesheet[style])
 
@@ -213,7 +268,9 @@ class PdfBuilder(object):
         ids = [pt.id for pt in self.doc.pageTemplates]
         if template_id not in ids:
             raise_template_not_found(template_id)
-        elif (not self.inc_cover and ids[0] != template_id) or (self.inc_cover and ids[1] != template_id):
+        elif (not self.inc_cover and ids[0] != template_id) or (
+            self.inc_cover and ids[1] != template_id
+        ):
             tmp = self.doc.pageTemplates.pop(ids.index(template_id))
             self.doc.pageTemplates.insert(self.inc_cover and 1 or 0, tmp)
 
@@ -240,10 +297,16 @@ class PdfBuilder(object):
         for idx, frame in enumerate(pt.frames):
             if frame.id not in flowable_map:
                 # Add a note to the template to show that nothing was defined for this area
-                self.story.append(Paragraph('NOT DEFINED: %s' % frame.id, getSampleStyleSheet()['Normal']))
+                self.story.append(
+                    Paragraph(
+                        "NOT DEFINED: %s" % frame.id, getSampleStyleSheet()["Normal"]
+                    )
+                )
             else:
                 flowables = flowable_map[frame.id]
-                if not isinstance(flowables, Flowable) and hasattr(flowables, '__iter__'):
+                if not isinstance(flowables, Flowable) and hasattr(
+                    flowables, "__iter__"
+                ):
                     [self.story.append(f) for f in flowables]
                 else:
                     self.story.append(flowables)
@@ -253,9 +316,13 @@ class PdfBuilder(object):
 
     def define_simple_grid_template(self, template_id, nrows, ncols):
         """Define a simple grid template. This will define nrows*ncols frames, which will be indexed starting with '0,0'
-            and using numpy style indexing. So '0,1' is row 0 , col 1"""
+        and using numpy style indexing. So '0,1' is row 0 , col 1"""
         template = GridTemplate(template_id, nrows, ncols)
-        [template.define_frame('%s,%s' % (i, j), template[i, j]) for i in range(nrows) for j in range(ncols)]
+        [
+            template.define_frame("%s,%s" % (i, j), template[i, j])
+            for i in range(nrows)
+            for j in range(ncols)
+        ]
         template.register(self)
         return self
 
@@ -269,5 +336,3 @@ class PdfBuilder(object):
 
         self.doc.build(self.story)
         # self.doc.multiBuild(self.story)
-
-

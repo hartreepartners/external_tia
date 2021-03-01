@@ -10,21 +10,21 @@ from tia.analysis.util import per_series
 
 
 PER_YEAR_MAP = {
-    'BA': 1.,
-    'BAS': 1.,
-    'A': 1.,
-    'AS': 1.,
-    'BQ': 4.,
-    'BQS': 4.,
-    'Q': 4.,
-    'QS': 4.,
-    'D': 365.,
-    'B': 252.,
-    'BMS': 12.,
-    'BM': 12.,
-    'MS': 12.,
-    'M': 12.,
-    'W': 52.,
+    "BA": 1.0,
+    "BAS": 1.0,
+    "A": 1.0,
+    "AS": 1.0,
+    "BQ": 4.0,
+    "BQS": 4.0,
+    "Q": 4.0,
+    "QS": 4.0,
+    "D": 365.0,
+    "B": 252.0,
+    "BMS": 12.0,
+    "BM": 12.0,
+    "MS": 12.0,
+    "M": 12.0,
+    "W": 52.0,
 }
 
 
@@ -33,52 +33,60 @@ def guess_freq(index):
     if isinstance(index, (pd.Series, pd.DataFrame)):
         index = index.index
 
-    if hasattr(index, 'freqstr') and index.freqstr:
+    if hasattr(index, "freqstr") and index.freqstr:
         return index.freqstr[0]
     elif len(index) < 3:
-        raise Exception('cannot guess frequency with less than 3 items')
+        raise Exception("cannot guess frequency with less than 3 items")
     else:
         lb = min(7, len(index))
-        idx_zip = lambda: list(zip(index[-lb:-1], index[-(lb-1):]))
+        idx_zip = lambda: list(zip(index[-lb:-1], index[-(lb - 1) :]))
 
         diff = min([t2 - t1 for t1, t2, in idx_zip()])
         if diff.days <= 1:
             if 5 in index.dayofweek or 6 in index.dayofweek:
-                return 'D'
+                return "D"
             else:
-                return 'B'
+                return "B"
         elif diff.days == 7:
-            return 'W'
+            return "W"
         else:
             diff = min([t2.month - t1.month for t1, t2, in idx_zip()])
             if diff == 1:
-                return 'M'
+                return "M"
             diff = min([t2.year - t1.year for t1, t2, in idx_zip()])
             if diff == 1:
-                return 'A'
+                return "A"
 
-            strs = ','.join([i.strftime('%Y-%m-%d') for i in index[-lb:]])
-            raise Exception('unable to determine frequency, last %s dates %s' % (lb, strs))
+            strs = ",".join([i.strftime("%Y-%m-%d") for i in index[-lb:]])
+            raise Exception(
+                "unable to determine frequency, last %s dates %s" % (lb, strs)
+            )
 
 
 def periodicity(freq_or_frame):
     """
     resolve the number of periods per year
     """
-    if hasattr(freq_or_frame, 'rule_code'):
+    if hasattr(freq_or_frame, "rule_code"):
         rc = freq_or_frame.rule_code
-        rc = rc.split('-')[0]
+        rc = rc.split("-")[0]
         factor = PER_YEAR_MAP.get(rc, None)
         if factor is not None:
             return factor / abs(freq_or_frame.n)
         else:
-            raise Exception('Failed to determine periodicity. No factor mapping for %s' % freq_or_frame)
+            raise Exception(
+                "Failed to determine periodicity. No factor mapping for %s"
+                % freq_or_frame
+            )
     elif isinstance(freq_or_frame, str):
         factor = PER_YEAR_MAP.get(freq_or_frame, None)
         if factor is not None:
             return factor
         else:
-            raise Exception('Failed to determine periodicity. No factor mapping for %s' % freq_or_frame)
+            raise Exception(
+                "Failed to determine periodicity. No factor mapping for %s"
+                % freq_or_frame
+            )
     elif isinstance(freq_or_frame, (pd.Series, pd.DataFrame, pd.TimeSeries)):
         freq = freq_or_frame.index.freq
         if not freq:
@@ -90,7 +98,7 @@ def periodicity(freq_or_frame):
                 import warnings
 
                 freq = guess_freq(freq_or_frame.index)
-                warnings.warn('frequency not set. guessed it to be %s' % freq)
+                warnings.warn("frequency not set. guessed it to be %s" % freq)
                 return periodicity(freq)
         else:
             return periodicity(freq)
@@ -102,8 +110,8 @@ periods_in_year = periodicity
 
 
 def _resolve_periods_in_year(scale, frame):
-    """ Convert the scale to an annualzation factor.  If scale is None then attempt to resolve from frame. If scale is a scalar then
-        use it. If scale is a string then use it to lookup the annual factor
+    """Convert the scale to an annualzation factor.  If scale is None then attempt to resolve from frame. If scale is a scalar then
+    use it. If scale is a string then use it to lookup the annual factor
     """
     if scale is None:
         return periodicity(frame)
@@ -122,16 +130,20 @@ def excess_returns(returns, bm=0):
     return returns - bm
 
 
-def returns(prices, method='simple', periods=1, fill_method='pad', limit=None, freq=None):
+def returns(
+    prices, method="simple", periods=1, fill_method="pad", limit=None, freq=None
+):
     """
-     compute the returns for the specified prices.
-     method: [simple,compound,log], compound is log
+    compute the returns for the specified prices.
+    method: [simple,compound,log], compound is log
     """
-    if method not in ('simple', 'compound', 'log'):
+    if method not in ("simple", "compound", "log"):
         raise ValueError("Invalid method type. Valid values are ('simple', 'compound')")
 
-    if method == 'simple':
-        return prices.pct_change(periods=periods, fill_method=fill_method, limit=limit, freq=freq)
+    if method == "simple":
+        return prices.pct_change(
+            periods=periods, fill_method=fill_method, limit=limit, freq=freq
+        )
     else:
         if freq is not None:
             raise NotImplementedError("TODO: implement this logic if needed")
@@ -148,13 +160,17 @@ def returns(prices, method='simple', periods=1, fill_method='pad', limit=None, f
             return data
         else:
             return pd.DataFrame(
-                {name: returns(col, method, periods, fill_method, limit, freq) for name, col in prices.items()},
+                {
+                    name: returns(col, method, periods, fill_method, limit, freq)
+                    for name, col in prices.items()
+                },
                 columns=prices.columns,
-                index=prices.index)
+                index=prices.index,
+            )
 
 
 def returns_cumulative(returns, geometric=True, expanding=False):
-    """ return the cumulative return
+    """return the cumulative return
 
     Parameters
     ----------
@@ -167,18 +183,18 @@ def returns_cumulative(returns, geometric=True, expanding=False):
     """
     if expanding:
         if geometric:
-            return (1. + returns).cumprod() - 1.
+            return (1.0 + returns).cumprod() - 1.0
         else:
             return returns.cumsum()
     else:
         if geometric:
-            return (1. + returns).prod() - 1.
+            return (1.0 + returns).prod() - 1.0
         else:
             return returns.sum()
 
 
 def rolling_returns_cumulative(returns, window, min_periods=1, geometric=True):
-    """ return the rolling cumulative returns
+    """return the rolling cumulative returns
 
     Parameters
     ----------
@@ -188,7 +204,7 @@ def rolling_returns_cumulative(returns, window, min_periods=1, geometric=True):
     geometric : link the returns geometrically
     """
     if geometric:
-        rc = lambda x: (1. + x[np.isfinite(x)]).prod() - 1.
+        rc = lambda x: (1.0 + x[np.isfinite(x)]).prod() - 1.0
     else:
         rc = lambda x: (x[np.isfinite(x)]).sum()
 
@@ -196,7 +212,7 @@ def rolling_returns_cumulative(returns, window, min_periods=1, geometric=True):
 
 
 def returns_annualized(returns, geometric=True, scale=None, expanding=False):
-    """ return the annualized cumulative returns
+    """return the annualized cumulative returns
 
     Parameters
     ----------
@@ -214,13 +230,13 @@ def returns_annualized(returns, geometric=True, scale=None, expanding=False):
     if expanding:
         if geometric:
             n = pd.expanding_count(returns)
-            return ((1. + returns).cumprod() ** (scale / n)) - 1.
+            return ((1.0 + returns).cumprod() ** (scale / n)) - 1.0
         else:
             return pd.expanding_mean(returns) * scale
     else:
         if geometric:
             n = returns.count()
-            return ((1. + returns).prod() ** (scale / n)) - 1.
+            return ((1.0 + returns).prod() ** (scale / n)) - 1.0
         else:
             return returns.mean() * scale
 
@@ -230,23 +246,23 @@ def drawdowns(returns, geometric=True):
     compute the drawdown series for the period return series
     return: periodic return Series or DataFrame
     """
-    wealth = 1. + returns_cumulative(returns, geometric=geometric, expanding=True)
+    wealth = 1.0 + returns_cumulative(returns, geometric=geometric, expanding=True)
     values = wealth.values
     if values.ndim == 2:
         ncols = values.shape[-1]
-        values = np.vstack(([1.] * ncols, values))
+        values = np.vstack(([1.0] * ncols, values))
         maxwealth = pd.expanding_max(values)[1:]
-        dds = wealth / maxwealth - 1.
+        dds = wealth / maxwealth - 1.0
         dds[dds > 0] = 0  # Can happen if first returns are positive
         return dds
     elif values.ndim == 1:
-        values = np.hstack(([1.], values))
+        values = np.hstack(([1.0], values))
         maxwealth = pd.expanding_max(values)[1:]
-        dds = wealth / maxwealth - 1.
+        dds = wealth / maxwealth - 1.0
         dds[dds > 0] = 0  # Can happen if first returns are positive
         return dds
     else:
-        raise ValueError('unable to process array with %s dimensions' % values.ndim)
+        raise ValueError("unable to process array with %s dimensions" % values.ndim)
 
 
 def max_drawdown(returns=None, geometric=True, dd=None, inc_date=False):
@@ -256,14 +272,14 @@ def max_drawdown(returns=None, geometric=True, dd=None, inc_date=False):
     dd: drawdown Series or DataFrame (mutually exclusive with returns)
     """
     if (returns is None and dd is None) or (returns is not None and dd is not None):
-        raise ValueError('returns and drawdowns are mutually exclusive')
+        raise ValueError("returns and drawdowns are mutually exclusive")
 
     if returns is not None:
         dd = drawdowns(returns, geometric=geometric)
 
     if isinstance(dd, pd.DataFrame):
         vals = [max_drawdown(dd=dd[c], inc_date=inc_date) for c in dd.columns]
-        cols = ['maxxdd'] + (inc_date and ['maxdd_dt'] or [])
+        cols = ["maxxdd"] + (inc_date and ["maxdd_dt"] or [])
         res = pd.DataFrame(vals, columns=cols, index=dd.columns)
         return res if inc_date else res.maxdd
     else:
@@ -271,7 +287,7 @@ def max_drawdown(returns=None, geometric=True, dd=None, inc_date=False):
         # if mddidx == dd.index[0]:
         # # no maxff
         #    return 0 if not inc_date else (0, None)
-        #else:
+        # else:
         sub = dd[:mddidx]
         start = sub[::-1].idxmax()
         mdd = dd[mddidx]
@@ -291,20 +307,28 @@ def drawdown_info(returns, geometric=True):
     """
     dd = drawdowns(returns, geometric=True).to_frame()
     last = dd.index[-1]
-    dd.columns = ['vals']
-    dd['nonzero'] = (dd.vals != 0).astype(int)
-    dd['gid'] = (dd.nonzero.shift(1) != dd.nonzero).astype(int).cumsum()
-    idxname = dd.index.name or 'index'
-    ixs = dd.reset_index().groupby(['nonzero', 'gid'])[idxname].apply(lambda x: np.array(x))
+    dd.columns = ["vals"]
+    dd["nonzero"] = (dd.vals != 0).astype(int)
+    dd["gid"] = (dd.nonzero.shift(1) != dd.nonzero).astype(int).cumsum()
+    idxname = dd.index.name or "index"
+    ixs = (
+        dd.reset_index()
+        .groupby(["nonzero", "gid"])[idxname]
+        .apply(lambda x: np.array(x))
+    )
     rows = []
     if 1 in ixs:
         for ix in ixs[1]:
             sub = dd.ix[ix]
             # need to get t+1 since actually draw down ends on the 0 value
-            end = dd.index[dd.index.get_loc(sub.index[-1]) + (last != sub.index[-1] and 1 or 0)]
+            end = dd.index[
+                dd.index.get_loc(sub.index[-1]) + (last != sub.index[-1] and 1 or 0)
+            ]
             rows.append([sub.index[0], end, sub.vals.min(), sub.vals.idxmin()])
-    f = pd.DataFrame.from_records(rows, columns=['dd start', 'dd end', 'maxdd', 'maxdd dt'])
-    f['days'] = (f['dd end'] - f['dd start']).astype('timedelta64[D]')
+    f = pd.DataFrame.from_records(
+        rows, columns=["dd start", "dd end", "maxdd", "maxdd dt"]
+    )
+    f["days"] = (f["dd end"] - f["dd start"]).astype("timedelta64[D]")
     return f
 
 
@@ -332,7 +356,9 @@ def sharpe(returns, rfr=0, expanding=0):
 def sharpe_annualized(returns, rfr_ann=0, scale=None, expanding=False, geometric=False):
     scale = _resolve_periods_in_year(scale, returns)
     stdann = std_annualized(returns, scale=scale, expanding=expanding)
-    retsann = returns_annualized(returns, scale=scale, expanding=expanding, geometric=geometric)
+    retsann = returns_annualized(
+        returns, scale=scale, expanding=expanding, geometric=geometric
+    )
     return (retsann - rfr_ann) / stdann
 
 
@@ -370,7 +396,9 @@ def sortino_ratio(rets, rfr_ann=0, mar=0, full=0, expanding=0):
     :return:
     """
     annrets = returns_annualized(rets, expanding=expanding) - rfr_ann
-    return annrets / downside_deviation(rets, mar=mar, expanding=expanding, full=full, ann=1)
+    return annrets / downside_deviation(
+        rets, mar=mar, expanding=expanding, full=full, ann=1
+    )
 
 
 def information_ratio(rets, bm_rets, scale=None, expanding=False):
@@ -386,7 +414,9 @@ def information_ratio(rets, bm_rets, scale=None, expanding=False):
     scale = _resolve_periods_in_year(scale, rets)
     rets_ann = returns_annualized(rets, scale=scale, expanding=expanding)
     bm_rets_ann = returns_annualized(rets, scale=scale, expanding=expanding)
-    tracking_error_ann = std_annualized((rets - bm_rets), scale=scale, expanding=expanding)
+    tracking_error_ann = std_annualized(
+        (rets - bm_rets), scale=scale, expanding=expanding
+    )
     return (rets_ann - bm_rets_ann) / tracking_error_ann
 
 
@@ -398,14 +428,17 @@ def upside_potential_ratio(rets, mar=0, full=0, expanding=0):
             n = pd.expanding_count(rets) if full else pd.expanding_count(above)
             upside = excess.cumsum() / n
             downside = downside_deviation(rets, mar=mar, full=full, expanding=1)
-            return (upside / downside).reindex(rets.index).fillna(method='ffill')
+            return (upside / downside).reindex(rets.index).fillna(method="ffill")
         else:
             n = rets.count() if full else above.count()
             upside = excess.sum() / n
             downside = downside_deviation(rets, mar=mar, full=full)
             return upside / downside
     else:
-        vals = {c: upside_potential_ratio(rets[c], mar=mar, full=full, expanding=expanding) for c in rets.columns}
+        vals = {
+            c: upside_potential_ratio(rets[c], mar=mar, full=full, expanding=expanding)
+            for c in rets.columns
+        }
         if expanding:
             return pd.DataFrame(vals, columns=rets.columns)
         else:
@@ -427,7 +460,9 @@ def rolling_percentileofscore(series, window, min_periods=None):
     if notnull.empty:
         return pd.Series(np.nan, index=series.index)
     else:
-        return pd.rolling_apply(notnull, window, _percentile, min_periods=min_periods).reindex(series.index)
+        return pd.rolling_apply(
+            notnull, window, _percentile, min_periods=min_periods
+        ).reindex(series.index)
 
 
 @per_series()
@@ -443,7 +478,9 @@ def expanding_percentileofscore(series, min_periods=None):
     if notnull.empty:
         return pd.Series(np.nan, index=series.index)
     else:
-        return pd.expanding_apply(notnull, _percentile, min_periods=min_periods).reindex(series.index)
+        return pd.expanding_apply(
+            notnull, _percentile, min_periods=min_periods
+        ).reindex(series.index)
 
 
 def hurst_exponent(px, lags=list(range(2, 100))):
@@ -464,58 +501,68 @@ def hurst_exponent(px, lags=list(range(2, 100))):
     return poly[0] * 2.0
 
 
-def summarize_returns(period_rets, rollup='M', prefix=1, ret_method='compound', yearly=1, ltd=1):
+def summarize_returns(
+    period_rets, rollup="M", prefix=1, ret_method="compound", yearly=1, ltd=1
+):
     # TODO - should be able to handle DateTimeIndex
     if not isinstance(period_rets.index, pd.PeriodIndex):
-        raise Exception('expected periodic return series')
+        raise Exception("expected periodic return series")
 
     def _analyze(rets):
         rets = rets.dropna()
         if rollup != rets.index.freqstr:
-            if ret_method == 'simple':
-                resampled = rets.resample(rollup, 'sum')
-            elif ret_method == 'compound':
-                resampled = (1. + rets).resample(rollup, 'prod') - 1.
+            if ret_method == "simple":
+                resampled = rets.resample(rollup, "sum")
+            elif ret_method == "compound":
+                resampled = (1.0 + rets).resample(rollup, "prod") - 1.0
             else:
-                raise Exception('ret_method must be on of [simple, compound]')
+                raise Exception("ret_method must be on of [simple, compound]")
         else:
             resampled = rets
 
-        rfreq = rollup.lower().replace('b', 'd')
-        pfreq = period_rets.index.freqstr.lower().replace('b', 'd')
-        fmap = {'d': 'daily', 'm': 'monthly', 'w': 'weekly', 'q': 'quarterly'}
+        rfreq = rollup.lower().replace("b", "d")
+        pfreq = period_rets.index.freqstr.lower().replace("b", "d")
+        fmap = {"d": "daily", "m": "monthly", "w": "weekly", "q": "quarterly"}
         rfreq = fmap.get(rfreq, pfreq)
         pfreq = fmap.get(pfreq, pfreq)
 
         pds_per_yr = periodicity(resampled)
         d = OrderedDict()
-        d['{0}_ret_avg'.format(rfreq)] = ret_avg = resampled.mean()
-        d['{0}_ret_cum'.format(rfreq)] = returns_cumulative(resampled)
-        d['{0}_stdev'.format(rfreq)] = resampled.std()
-        d['{0}_stdev_ann'.format(rfreq)] = std_ann = std_annualized(resampled)
-        d['{0}_sharpe_ann'.format(rfreq)] = pds_per_yr * ret_avg / std_ann
-        d['{0}_sortino'.format(rfreq)] = sortino_ratio(resampled, full=0)
+        d["{0}_ret_avg".format(rfreq)] = ret_avg = resampled.mean()
+        d["{0}_ret_cum".format(rfreq)] = returns_cumulative(resampled)
+        d["{0}_stdev".format(rfreq)] = resampled.std()
+        d["{0}_stdev_ann".format(rfreq)] = std_ann = std_annualized(resampled)
+        d["{0}_sharpe_ann".format(rfreq)] = pds_per_yr * ret_avg / std_ann
+        d["{0}_sortino".format(rfreq)] = sortino_ratio(resampled, full=0)
         mdd = max_drawdown(rets, inc_date=1)
-        d['{0}_maxdd'.format(pfreq)] = mdd[0]
-        d['{0}_maxdd_dt'.format(pfreq)] = mdd[1]
+        d["{0}_maxdd".format(pfreq)] = mdd[0]
+        d["{0}_maxdd_dt".format(pfreq)] = mdd[1]
         return d
 
     if isinstance(period_rets, pd.DataFrame):
         # Multi-indexed data frame needed to show multiple rows per year
         arr = []
         for c in period_rets:
-            res = summarize_returns(period_rets[c], rollup=rollup, yearly=yearly, ltd=ltd)
+            res = summarize_returns(
+                period_rets[c], rollup=rollup, yearly=yearly, ltd=ltd
+            )
             names = list(res.index.names)
             names.append(period_rets.index.name)
-            res.index = pd.MultiIndex.from_arrays([res.index, [c] * len(res.index)], names=names)
+            res.index = pd.MultiIndex.from_arrays(
+                [res.index, [c] * len(res.index)], names=names
+            )
             arr.append(res)
         return pd.concat(arr).sortlevel()
     else:
         arrs = []
         if yearly:
-            arrs.append(period_rets.groupby(lambda k: k.year).apply(lambda tmp: _analyze(tmp.sort_index())).unstack(1))
+            arrs.append(
+                period_rets.groupby(lambda k: k.year)
+                .apply(lambda tmp: _analyze(tmp.sort_index()))
+                .unstack(1)
+            )
         if ltd:
-            arrs.append(pd.DataFrame(_analyze(period_rets), index=['LTD']))
+            arrs.append(pd.DataFrame(_analyze(period_rets), index=["LTD"]))
         summary = pd.concat(arrs)
-        summary.index.name = 'period'
+        summary.index.name = "period"
         return summary

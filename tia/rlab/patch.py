@@ -6,9 +6,9 @@ import reportlab.platypus.flowables as fl
 
 
 def _listWrapOn(F, availWidth, canv, mergeSpace=1, obj=None, dims=None):
-    '''return max width, required height for a list of flowables F'''
-    doct = getattr(canv, '_doctemplate', None)
-    cframe = getattr(doct, 'frame', None)
+    """return max width, required height for a list of flowables F"""
+    doct = getattr(canv, "_doctemplate", None)
+    cframe = getattr(doct, "frame", None)
     if cframe:
         from reportlab.platypus.doctemplate import _addGeneratedContent, Indenter
 
@@ -26,17 +26,19 @@ def _listWrapOn(F, availWidth, canv, mergeSpace=1, obj=None, dims=None):
         F = F[:]
         while F:
             f = F.pop(0)
-            if hasattr(f, 'frameAction'):
+            if hasattr(f, "frameAction"):
                 from reportlab.platypus.doctemplate import Indenter
 
                 if isinstance(f, Indenter):
                     availWidth -= f.left + f.right
                 continue
-            w, h = f.wrapOn(canv, availWidth, 0xfffffff)
-            if dims is not None: dims.append((w, h))
+            w, h = f.wrapOn(canv, availWidth, 0xFFFFFFF)
+            if dims is not None:
+                dims.append((w, h))
             if cframe:
                 _addGeneratedContent(F, cframe)
-            if w <= fl._FUZZ or h <= fl._FUZZ: continue
+            if w <= fl._FUZZ or h <= fl._FUZZ:
+                continue
             #
             # THE HACK
             #
@@ -46,23 +48,26 @@ def _listWrapOn(F, availWidth, canv, mergeSpace=1, obj=None, dims=None):
             if not atTop:
                 h = f.getSpaceBefore()
                 if mergeSpace:
-                    if getattr(f, '_SPACETRANSFER', False):
+                    if getattr(f, "_SPACETRANSFER", False):
                         h = pS
                     h = max(h - pS, 0)
                 H += h
             else:
-                if obj is not None: obj._spaceBefore = f.getSpaceBefore()
+                if obj is not None:
+                    obj._spaceBefore = f.getSpaceBefore()
                 atTop = 0
             s = f.getSpaceAfter()
-            if getattr(f, '_SPACETRANSFER', False):
+            if getattr(f, "_SPACETRANSFER", False):
                 s = pS
             pS = s
             H += pS
-        if obj is not None: obj._spaceAfter = pS
+        if obj is not None:
+            obj._spaceAfter = pS
         return W, H - pS
     finally:
         if cframe:
             doct.frame = doct_frame
 
+
 # Hack in order to get width constrained
-#fl._listWrapOn = _listWrapOn
+# fl._listWrapOn = _listWrapOn

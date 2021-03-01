@@ -6,8 +6,15 @@ from tia.analysis.perf import periods_in_year
 from tia.analysis.model.interface import CostCalculator, EodMarketData
 
 
-__all__ = ['InstrumentPrices', 'Instrument', 'Instruments', 'load_yahoo_stock', 'load_bbg_stock', 'load_bbg_future',
-           'BloombergInstrumentLoader']
+__all__ = [
+    "InstrumentPrices",
+    "Instrument",
+    "Instruments",
+    "load_yahoo_stock",
+    "load_bbg_stock",
+    "load_bbg_future",
+    "BloombergInstrumentLoader",
+]
 
 
 class InstrumentPrices(object):
@@ -17,23 +24,40 @@ class InstrumentPrices(object):
 
     def _ensure_ohlc(self, frame):
         # missing = pd.Index(['open', 'high', 'low', 'close']).difference(frame.columns)
-        missing = pd.Index(['open', 'high', 'low', 'close']) - frame.columns
+        missing = pd.Index(["open", "high", "low", "close"]) - frame.columns
         if len(missing) != 0:
-            raise ValueError('price frame missing expected columns: {0}'.format(','.join([m for m in missing])))
+            raise ValueError(
+                "price frame missing expected columns: {0}".format(
+                    ",".join([m for m in missing])
+                )
+            )
 
     open = property(lambda self: self.frame.open)
     high = property(lambda self: self.frame.high)
     low = property(lambda self: self.frame.low)
     close = property(lambda self: self.frame.close)
-    dvds = property(lambda self: self.frame.dvds if 'dvds' in self.frame else pd.Series(np.nan, index=self.frame.index))
+    dvds = property(
+        lambda self: self.frame.dvds
+        if "dvds" in self.frame
+        else pd.Series(np.nan, index=self.frame.index)
+    )
 
     def total_return(self):
         """http://en.wikipedia.org/wiki/Total_shareholder_return - mimics bloomberg total return"""
         pxend = self.close
         pxstart = pxend.shift(1).bfill()
-        return (1. + (pxend - pxstart + self.dvds.fillna(0)) / pxstart).cumprod() - 1
+        return (1.0 + (pxend - pxstart + self.dvds.fillna(0)) / pxstart).cumprod() - 1
 
-    def volatility(self, n, freq=None, which='close', ann=True, model='ln', min_periods=1, rolling='simple'):
+    def volatility(
+        self,
+        n,
+        freq=None,
+        which="close",
+        ann=True,
+        model="ln",
+        min_periods=1,
+        rolling="simple",
+    ):
         """Return the annualized volatility series. N is the number of lookback periods.
 
         :param n: int, number of lookback periods
@@ -47,27 +71,27 @@ class InstrumentPrices(object):
         :param rolling:{'simple', 'exp'}, if exp, use ewmstd. if simple, use rolling_std
         :return:
         """
-        if model not in ('bbg', 'ln', 'pct'):
-            raise ValueError('model must be one of (bbg, ln, pct), not %s' % model)
-        if rolling not in ('simple', 'exp'):
-            raise ValueError('rolling must be one of (simple, exp), not %s' % rolling)
+        if model not in ("bbg", "ln", "pct"):
+            raise ValueError("model must be one of (bbg, ln, pct), not %s" % model)
+        if rolling not in ("simple", "exp"):
+            raise ValueError("rolling must be one of (simple, exp), not %s" % rolling)
 
         px = self.frame[which]
-        px = px if not freq else px.resample(freq, how='last')
-        if model == 'bbg' and periods_in_year(px) == 252:
+        px = px if not freq else px.resample(freq, how="last")
+        if model == "bbg" and periods_in_year(px) == 252:
             # Bloomberg uses business days, so need to convert and reindex
             orig = px.index
-            px = px.resample('B').ffill()
+            px = px.resample("B").ffill()
             chg = np.log(px / px.shift(1))
             chg[chg.index - orig] = np.nan
-            if rolling == 'simple':
+            if rolling == "simple":
                 vol = pd.rolling_std(chg, n, min_periods=min_periods).reindex(orig)
             else:
                 vol = pd.ewmstd(chg, span=n, min_periods=n)
             return vol if not ann else vol * np.sqrt(260)
         else:
-            chg = px.pct_change() if model == 'pct' else np.log(px / px.shift(1))
-            if rolling == 'simple':
+            chg = px.pct_change() if model == "pct" else np.log(px / px.shift(1))
+            if rolling == "simple":
                 vol = pd.rolling_std(chg, n, min_periods=min_periods)
             else:
                 vol = pd.ewmstd(chg, span=n, min_periods=n)
@@ -95,21 +119,32 @@ class Instrument(CostCalculator, EodMarketData):
         close = self.pxs.close
         mktval = self.get_mkt_val(close)
         dvds = self.pxs.dvds
-        df = pd.DataFrame({'close': close, 'mkt_val': mktval, 'dvds': dvds})
-        df.index.name = 'date'
+        df = pd.DataFrame({"close": close, "mkt_val": mktval, "dvds": dvds})
+        df.index.name = "date"
         return df
 
     def truncate(self, before=None, after=None):
         """Return an instrument with prices starting at before and ending at after"""
         pxframe = self.pxs.frame
-        if (before is None or before == pxframe.index[0]) and (after is None or after == pxframe.index[-1]):
+        if (before is None or before == pxframe.index[0]) and (
+            after is None or after == pxframe.index[-1]
+        ):
             return self
         else:
             tpxs = self.pxs.frame.truncate(before, after)
-            return Instrument(self.sid, InstrumentPrices(tpxs), multiplier=self.multiplier)
+            return Instrument(
+                self.sid, InstrumentPrices(tpxs), multiplier=self.multiplier
+            )
 
-    def new_buy_and_hold_port(self, qty=1., open_px='close', open_dt=None, close_px='close', close_dt=None,
-                              ret_calc=None):
+    def new_buy_and_hold_port(
+        self,
+        qty=1.0,
+        open_px="close",
+        open_dt=None,
+        close_px="close",
+        close_dt=None,
+        ret_calc=None,
+    ):
         """
 
         :param qty: float
@@ -123,7 +158,11 @@ class Instrument(CostCalculator, EodMarketData):
         from tia.analysis.model.trd import TradeBlotter
         from tia.analysis.model.port import SingleAssetPortfolio
 
-        getpx = lambda how, dt: how if not isinstance(how, str) else self.pxs.frame[how].asof(dt)
+        getpx = (
+            lambda how, dt: how
+            if not isinstance(how, str)
+            else self.pxs.frame[how].asof(dt)
+        )
 
         open_dt = open_dt or self.pxs.frame.index[0]
         open_px = getpx(open_px, open_dt)
@@ -140,7 +179,7 @@ class Instrument(CostCalculator, EodMarketData):
         return SingleAssetPortfolio(pricer, trds, ret_calc=ret_calc)
 
     def __repr__(self):
-        return '%s(%r, mult=%s)' % (self.__class__.__name__, self.sid, self.multiplier)
+        return "%s(%r, mult=%s)" % (self.__class__.__name__, self.sid, self.multiplier)
 
 
 class Instruments(object):
@@ -150,7 +189,10 @@ class Instruments(object):
         elif isinstance(instruments, (tuple, list)):
             instruments = pd.Series(instruments, index=[i.sid for i in instruments])
         elif not isinstance(instruments, pd.Series):
-            raise ValueError('instruments must be None, tuple, list, or Series. Not %s' % type(instruments))
+            raise ValueError(
+                "instruments must be None, tuple, list, or Series. Not %s"
+                % type(instruments)
+            )
         self._instruments = instruments
 
     sids = property(lambda self: self._instruments.index)
@@ -181,7 +223,7 @@ class Instruments(object):
         return pd.concat(list(kvals.values()), axis=1, keys=list(kvals.keys()))
 
     def __repr__(self):
-        return '[{0}]'.format(','.join([repr(i) for i in self._instruments]))
+        return "[{0}]".format(",".join([repr(i) for i in self._instruments]))
 
 
 def get_dividends_yahoo(sid, start, end):
@@ -190,20 +232,24 @@ def get_dividends_yahoo(sid, start, end):
     from pandas.io.common import urlopen
 
     start, end = pd.to_datetime(start), pd.to_datetime(end)
-    url = ('http://ichart.finance.yahoo.com/table.csv?' + 's=%s' % sid +
-           '&a=%s' % (start.month - 1) +
-           '&b=%s' % start.day +
-           '&c=%s' % start.year +
-           '&d=%s' % (end.month - 1) +
-           '&e=%s' % end.day +
-           '&f=%s' % end.year +
-           '&g=v' +  # THE CHANGE
-           '&ignore=.csv')
+    url = (
+        "http://ichart.finance.yahoo.com/table.csv?"
+        + "s=%s" % sid
+        + "&a=%s" % (start.month - 1)
+        + "&b=%s" % start.day
+        + "&c=%s" % start.year
+        + "&d=%s" % (end.month - 1)
+        + "&e=%s" % end.day
+        + "&f=%s" % end.year
+        + "&g=v"
+        + "&ignore=.csv"  # THE CHANGE
+    )
 
     with urlopen(url) as resp:
         lines = resp.read()
-    rs = pd.read_csv(StringIO(bytes_to_str(lines)), index_col=0,
-                     parse_dates=True, na_values='-')[::-1]
+    rs = pd.read_csv(
+        StringIO(bytes_to_str(lines)), index_col=0, parse_dates=True, na_values="-"
+    )[::-1]
     # Yahoo! Finance sometimes does this awesome thing where they
     # return 2 rows for the most recent business day
     if len(rs) > 2 and rs.index[-1] == rs.index[-2]:  # pragma: no cover
@@ -212,31 +258,39 @@ def get_dividends_yahoo(sid, start, end):
 
 
 def load_yahoo_stock(sids, start=None, end=None, dvds=True):
-    if hasattr(sids, '__iter__') and not isinstance(sids, str):
-        return Instruments([load_yahoo_stock(sid, start=start, end=end, dvds=dvds) for sid in sids])
+    if hasattr(sids, "__iter__") and not isinstance(sids, str):
+        return Instruments(
+            [load_yahoo_stock(sid, start=start, end=end, dvds=dvds) for sid in sids]
+        )
     else:
         sid = sids
         end = end and pd.to_datetime(end) or pd.datetime.now()
-        start = start and pd.to_datetime(start) or end + pd.datetools.relativedelta(years=-1)
+        start = (
+            start
+            and pd.to_datetime(start)
+            or end + pd.datetools.relativedelta(years=-1)
+        )
         data = get_data_yahoo(sid, start=start, end=end)
         data = data.rename(columns=lambda c: c.lower())
         if dvds:
             d = get_dividends_yahoo(sid, start, end)
-            d.columns = ['dvds']
+            d.columns = ["dvds"]
             if not d.empty:
                 # sanity check - not expected currently
                 # missing = d.index.difference(data.index)
                 missing = d.index - data.index
                 if len(missing) > 0:
-                    raise Exception('dividends occur on non-business day, not expecting this')
+                    raise Exception(
+                        "dividends occur on non-business day, not expecting this"
+                    )
                 # another sanity check to ensure yahoo rolls dividends up, in case a special occurs on same day
                 if not d.index.is_unique:
                     d = d.groupby(lambda x: x).sum()
                 data = data.join(d)
             else:
-                data['dvds'] = np.nan
+                data["dvds"] = np.nan
         pxs = InstrumentPrices(data)
-        return Instrument(sid, pxs, multiplier=1.)
+        return Instrument(sid, pxs, multiplier=1.0)
 
 
 def _resolve_accessor(sid_or_accessor):
@@ -249,7 +303,10 @@ def _resolve_accessor(sid_or_accessor):
         from tia.bbg import SidAccessor
 
         if not isinstance(sid_or_accessor, SidAccessor):
-            raise ValueError('sid_or_accessor must be either a string or SidAccessor not %s' % type(sid_or_accessor))
+            raise ValueError(
+                "sid_or_accessor must be either a string or SidAccessor not %s"
+                % type(sid_or_accessor)
+            )
         return sid_or_accessor
 
 
@@ -263,11 +320,13 @@ def load_bbg_stock(sid_or_accessor, start=None, end=None, dvds=True):
     :return:
     """
     end = end and pd.to_datetime(end) or pd.datetime.now()
-    start = start and pd.to_datetime(start) or end + pd.datetools.relativedelta(years=-1)
+    start = (
+        start and pd.to_datetime(start) or end + pd.datetools.relativedelta(years=-1)
+    )
 
-    FLDS = ['PX_OPEN', 'PX_HIGH', 'PX_LOW', 'PX_LAST']
-    DVD_FLD = 'DVD_HIST_ALL'
-    RENAME = {'PX_OPEN': 'open', 'PX_HIGH': 'high', 'PX_LOW': 'low', 'PX_LAST': 'close'}
+    FLDS = ["PX_OPEN", "PX_HIGH", "PX_LOW", "PX_LAST"]
+    DVD_FLD = "DVD_HIST_ALL"
+    RENAME = {"PX_OPEN": "open", "PX_HIGH": "high", "PX_LOW": "low", "PX_LAST": "close"}
 
     accessor = _resolve_accessor(sid_or_accessor)
     sid = accessor.sid
@@ -275,22 +334,26 @@ def load_bbg_stock(sid_or_accessor, start=None, end=None, dvds=True):
     dvdframe = accessor.get_attributes(DVD_FLD, ignore_field_error=1)
 
     if isinstance(dvdframe, pd.DataFrame):
-        dvdframe = dvdframe[['Ex-Date', 'Dividend Amount']].rename(
-            columns={'Ex-Date': 'date', 'Dividend Amount': 'dvds'})
-        dvdframe = dvdframe.set_index('date').sort_index()
+        dvdframe = dvdframe[["Ex-Date", "Dividend Amount"]].rename(
+            columns={"Ex-Date": "date", "Dividend Amount": "dvds"}
+        )
+        dvdframe = dvdframe.set_index("date").sort_index()
         dvdframe = dvdframe.truncate(start, end)
         # sanity check - not expected currently
         # missing = dvdframe.index.difference(pxframe.index)
         missing = dvdframe.index - pxframe.index
         if len(missing) > 0:
-            missing_dates = ','.join([m.strftime('%Y-%m-%d') for m in missing])
-            raise Exception('dividends occur on non-business day, not expecting this. %s' % missing_dates)
+            missing_dates = ",".join([m.strftime("%Y-%m-%d") for m in missing])
+            raise Exception(
+                "dividends occur on non-business day, not expecting this. %s"
+                % missing_dates
+            )
         # another sanity check to ensure yahoo rolls dividends up, in case a special occurs on same day
         if not dvdframe.index.is_unique:
             dvdframe = dvdframe.groupby(lambda x: x).sum()
         pxframe = pxframe.join(dvdframe)
     pxs = InstrumentPrices(pxframe)
-    return Instrument(sid, pxs, multiplier=1.)
+    return Instrument(sid, pxs, multiplier=1.0)
 
 
 def load_bbg_generic(sid_or_accessor, start=None, end=None):
@@ -302,15 +365,17 @@ def load_bbg_generic(sid_or_accessor, start=None, end=None):
     :return:
     """
     end = end and pd.to_datetime(end) or pd.datetime.now()
-    start = start and pd.to_datetime(start) or end + pd.datetools.relativedelta(years=-1)
+    start = (
+        start and pd.to_datetime(start) or end + pd.datetools.relativedelta(years=-1)
+    )
 
-    FLDS = ['PX_OPEN', 'PX_HIGH', 'PX_LOW', 'PX_LAST']
-    RENAME = {'PX_OPEN': 'open', 'PX_HIGH': 'high', 'PX_LOW': 'low', 'PX_LAST': 'close'}
+    FLDS = ["PX_OPEN", "PX_HIGH", "PX_LOW", "PX_LAST"]
+    RENAME = {"PX_OPEN": "open", "PX_HIGH": "high", "PX_LOW": "low", "PX_LAST": "close"}
     accessor = _resolve_accessor(sid_or_accessor)
     sid = accessor.sid
     pxframe = accessor.get_historical(FLDS, start=start, end=end).rename(columns=RENAME)
     pxs = InstrumentPrices(pxframe)
-    return Instrument(sid, pxs, multiplier=1.)
+    return Instrument(sid, pxs, multiplier=1.0)
 
 
 def load_bbg_future(sid_or_accessor, start=None, end=None):
@@ -322,15 +387,17 @@ def load_bbg_future(sid_or_accessor, start=None, end=None):
     :return:
     """
     end = end and pd.to_datetime(end) or pd.datetime.now()
-    start = start and pd.to_datetime(start) or end + pd.datetools.relativedelta(years=-1)
+    start = (
+        start and pd.to_datetime(start) or end + pd.datetools.relativedelta(years=-1)
+    )
 
-    FLDS = ['PX_OPEN', 'PX_HIGH', 'PX_LOW', 'PX_LAST']
-    RENAME = {'PX_OPEN': 'open', 'PX_HIGH': 'high', 'PX_LOW': 'low', 'PX_LAST': 'close'}
+    FLDS = ["PX_OPEN", "PX_HIGH", "PX_LOW", "PX_LAST"]
+    RENAME = {"PX_OPEN": "open", "PX_HIGH": "high", "PX_LOW": "low", "PX_LAST": "close"}
     accessor = _resolve_accessor(sid_or_accessor)
     sid = accessor.sid
     pxframe = accessor.get_historical(FLDS, start=start, end=end).rename(columns=RENAME)
     pxs = InstrumentPrices(pxframe)
-    mult = 1.
+    mult = 1.0
     try:
         mult = float(accessor.FUT_VAL_PT)
     except:
@@ -340,7 +407,13 @@ def load_bbg_future(sid_or_accessor, start=None, end=None):
 
 
 class BloombergInstrumentLoader(object):
-    StockTypes = ['Common Stock', 'Mutual Fund', 'Depositary Receipt', 'REIT', 'Partnership Shares']
+    StockTypes = [
+        "Common Stock",
+        "Mutual Fund",
+        "Depositary Receipt",
+        "REIT",
+        "Partnership Shares",
+    ]
 
     def __init__(self, mgr=None, start=None, end=None):
         from tia.bbg import BbgDataManager
@@ -356,11 +429,11 @@ class BloombergInstrumentLoader(object):
             end = end or self.end
             accessor = self.mgr[sids]
             sectype2 = accessor.SECURITY_TYP2
-            if sectype2 == 'Future':
+            if sectype2 == "Future":
                 return load_bbg_future(accessor, start=start, end=end)
-            elif sectype2 == 'Index':
+            elif sectype2 == "Index":
                 return load_bbg_generic(accessor, start=start, end=end)
-            elif sectype2 == 'CROSS':
+            elif sectype2 == "CROSS":
                 return load_bbg_generic(accessor, start=start, end=end)
             elif sectype2 in self.StockTypes:
                 return load_bbg_stock(accessor, start=start, end=end)
@@ -368,4 +441,3 @@ class BloombergInstrumentLoader(object):
                 raise Exception('SECURITY_TYP2 "%s" is not mapped' % sectype2)
         else:
             return Instruments([self.load(sid, start, end) for sid in sids])
-

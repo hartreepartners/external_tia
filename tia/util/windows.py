@@ -4,10 +4,14 @@ collection of utilities for use on windows systems
 import os
 
 
-def send_outlook_email(to, subject, body, attachments=None, cc=None, bcc=None, is_html=0):
+def send_outlook_email(
+    to, subject, body, attachments=None, cc=None, bcc=None, is_html=0
+):
     """ Send an email using your local outlook client """
     import win32com.client
+
     asarr = lambda v: None if not v else isinstance(v, str) and [v] or v
+
     def update_recipients(robj, users, type):
         users = asarr(to)
         if users:
@@ -37,7 +41,7 @@ def send_outlook_email(to, subject, body, attachments=None, cc=None, bcc=None, i
 
 
 class WinSCPBatch(object):
-    """ Provide a utility class which invokes the Winscp processes via the command line.
+    """Provide a utility class which invokes the Winscp processes via the command line.
 
     Example
     -------
@@ -45,14 +49,15 @@ class WinSCPBatch(object):
     batch.add_download('remotefile.txt', 'c:\\temp\\winscp\\localfile.txt')
     batch.execute()
     """
+
     def __init__(self, session, logfile=None):
         self.session = session
         self.logfile = logfile
         self.cmds = []
-        self.double_quote = lambda s: s and '""' + s + '""' or ''
+        self.double_quote = lambda s: s and '""' + s + '""' or ""
 
     def add_download(self, remote, local):
-        cmd = 'get %s %s' % (self.double_quote(remote), self.double_quote(local))
+        cmd = "get %s %s" % (self.double_quote(remote), self.double_quote(local))
         self.cmds.append(cmd)
 
     def add_downloads(self, filemap):
@@ -65,7 +70,7 @@ class WinSCPBatch(object):
         [self.add_download(k, v) for k, v in filemap.items()]
 
     def add_upload(self, remote, local):
-        cmd = 'put %s %s' % (self.double_quote(local), self.double_quote(remote))
+        cmd = "put %s %s" % (self.double_quote(local), self.double_quote(remote))
         self.cmds.append(cmd)
 
     def add_uploads(self, filemap):
@@ -78,22 +83,22 @@ class WinSCPBatch(object):
         [self.add_upload(k, v) for k, v in filemap.items()]
 
     def add_cd(self, remote_dir):
-        cmd = 'cd %s' % remote_dir
+        cmd = "cd %s" % remote_dir
         self.cmds.append(cmd)
 
     def execute(self):
-        env = os.environ['PATH']
-        if 'WinSCP' not in env:
-            if os.path.exists('C:\Program Files (x86)\WinSCP'):
-                os.environ['PATH'] = env + ';C:\Program Files (x86)\WinSCP'
-            elif os.path.exists('C:\Program Files\WinSCP'):
-                os.environ['PATH'] = env + ';C:\Program Files\WinSCP'
+        env = os.environ["PATH"]
+        if "WinSCP" not in env:
+            if os.path.exists("C:\Program Files (x86)\WinSCP"):
+                os.environ["PATH"] = env + ";C:\Program Files (x86)\WinSCP"
+            elif os.path.exists("C:\Program Files\WinSCP"):
+                os.environ["PATH"] = env + ";C:\Program Files\WinSCP"
 
-        cmd = 'winscp.exe'
+        cmd = "winscp.exe"
         if self.logfile:
             cmd += ' /log="%s"' % self.logfile
 
-        cmd += ' /command'
+        cmd += " /command"
         cmd += ' "option batch abort"'
         cmd += ' "option confirm off"'
         cmd += ' "open %s"' % self.session
@@ -103,11 +108,7 @@ class WinSCPBatch(object):
         cmd += ' "exit"'
         # not able to detect failures - but can raise failures when looking for expected files
         os.system(cmd)
-        #import subprocess as sub
-        #p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
-        #output, errors = p.communicate()
-        #print output
-
-
-
-
+        # import subprocess as sub
+        # p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+        # output, errors = p.communicate()
+        # print output

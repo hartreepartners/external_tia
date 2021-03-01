@@ -40,15 +40,20 @@ class PerLevel(object):
                 if isinstance(res, pd.Series):
                     res = res.to_frame()
                 elif not isinstance(res, pd.DataFrame):
-                    raise Exception('Expected Series or DataFrame as result not %s' % type(res))
+                    raise Exception(
+                        "Expected Series or DataFrame as result not %s" % type(res)
+                    )
 
-                arrs = [res.columns.get_level_values(lvl) for lvl in range(res.columns.nlevels)]
+                arrs = [
+                    res.columns.get_level_values(lvl)
+                    for lvl in range(res.columns.nlevels)
+                ]
                 names = list(res.columns.names)
                 for i in range(df.columns.nlevels - 1):
                     arrs.insert(i, [hdr[i]] * len(res.columns))
                     names.insert(i, df.columns.names[i])
 
-                if self.fct.__name__ == '_frame_to_series':
+                if self.fct.__name__ == "_frame_to_series":
                     arrs = arrs[:-1]
                     names = names[:-1]
                 res.columns = pd.MultiIndex.from_arrays(arrs, names=names)
@@ -66,10 +71,15 @@ class PerSeries(object):
 
     def __call__(self, *args, **kwargs):
         df_or_series = args[0]
-        if isinstance(df_or_series, (np.ndarray, pd.Series)):  # or len(df_or_series.columns) == 1:
+        if isinstance(
+            df_or_series, (np.ndarray, pd.Series)
+        ):  # or len(df_or_series.columns) == 1:
             return self.fct(*args, **kwargs)
         elif not isinstance(df_or_series, pd.DataFrame):
-            raise ValueError("Expected argument to be Series or DataFrame not %s" % type(df_or_series))
+            raise ValueError(
+                "Expected argument to be Series or DataFrame not %s"
+                % type(df_or_series)
+            )
         else:  # assume dataframe
             df = df_or_series
             if self.result_is_frame:
@@ -105,11 +115,11 @@ def per_level():
 def insert_level(df, label, level=0, copy=0, axis=0, level_name=None):
     """Add a new level to the index with the specified label. The newly created index will be a MultiIndex.
 
-       :param df: DataFrame
-       :param label: label to insert
-       :param copy: If True, copy the DataFrame before assigning new index
-       :param axis: If 0, then columns. If 1, then index
-       :return:
+    :param df: DataFrame
+    :param label: label to insert
+    :param copy: If True, copy the DataFrame before assigning new index
+    :param axis: If 0, then columns. If 1, then index
+    :return:
     """
     df = df if not copy else df.copy()
     src = df.columns if axis == 0 else df.index

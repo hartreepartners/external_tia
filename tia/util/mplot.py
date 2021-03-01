@@ -18,7 +18,7 @@ class _CustomDateFormatter(DateFormatter):
     """Extend so I can use with pandas Period objects """
 
     def __call__(self, x, pos=0):
-        if not hasattr(x, 'strftime'):
+        if not hasattr(x, "strftime"):
             x = pandas.to_datetime(x)
         x = x.strftime(self.fmt)
         return x
@@ -61,7 +61,7 @@ class _AxisFormat(DeferredExecutionMixin):
         self.axis.set_major_formatter(FuncFormatter(wrapper))
         return self
 
-    def date(self, fmt='%Y-%m-%d'):
+    def date(self, fmt="%Y-%m-%d"):
         fmtfct = DateFormatter(fmt)
         self.axis.set_major_formatter(fmtfct)
         return self
@@ -80,8 +80,8 @@ class _YAxisFormat(_AxisFormat):
     def axis(self):
         return self.axes.yaxis
 
-    def rotate(self, rot=40, ha='right'):
-        rotate_labels(self.axes, which='y', rot=rot, ha=ha)
+    def rotate(self, rot=40, ha="right"):
+        rotate_labels(self.axes, which="y", rot=rot, ha=ha)
         return self
 
     def label(self, txt, **kwargs):
@@ -94,8 +94,8 @@ class _XAxisFormat(_AxisFormat):
     def axis(self):
         return self.axes.xaxis
 
-    def rotate(self, rot=40, ha='right'):
-        rotate_labels(self.axes, which='x', rot=rot, ha=ha)
+    def rotate(self, rot=40, ha="right"):
+        rotate_labels(self.axes, which="x", rot=rot, ha=ha)
         return self
 
     def label(self, txt, **kwargs):
@@ -122,7 +122,7 @@ class AxesFormat(DeferredExecutionMixin):
 
 
 class FigureHelper(object):
-    def __init__(self, basedir=None, ext='.pdf', dpi=None):
+    def __init__(self, basedir=None, ext=".pdf", dpi=None):
         if not basedir:
             import tempfile
 
@@ -149,10 +149,10 @@ class FigureHelper(object):
 
     def savefig(self, fn=None, dpi=None, clear=1, ext=None, key=None):
         ext = ext or self.ext
-        ext = ext.startswith('.') and ext or '.' + ext
+        ext = ext.startswith(".") and ext or "." + ext
         fn = fn or uuid.uuid1()
-        key = key or ''
-        fn = '%s%s%s' % (key, fn, ext)
+        key = key or ""
+        fn = "%s%s%s" % (key, fn, ext)
         fn = os.path.join(self.basedir, fn)
 
         figure = self.figure
@@ -173,10 +173,10 @@ class FigureHelper(object):
         f, ax = plt.subplots(*params, **kwargs)
 
         def axes_iter(axes):
-            if not hasattr(axes, '__iter__'):
+            if not hasattr(axes, "__iter__"):
                 return iter(list([axes]))
             else:
-                if not hasattr(axes[0], '__iter__'):
+                if not hasattr(axes[0], "__iter__"):
                     return iter(axes)
                 else:
                     # array of arrays
@@ -187,7 +187,7 @@ class FigureHelper(object):
         return self.next_ax()
 
 
-def rotate_labels(ax, which='x', rot=40, ha='right'):
+def rotate_labels(ax, which="x", rot=40, ha="right"):
     which = which.upper()
 
     def _apply(lbls):
@@ -195,8 +195,8 @@ def rotate_labels(ax, which='x', rot=40, ha='right'):
             lbl.set_ha(ha)
             lbl.set_rotation(rot)
 
-    'X' in which and _apply(ax.get_xticklabels())
-    'Y' in which and _apply(ax.get_yticklabels())
+    "X" in which and _apply(ax.get_xticklabels())
+    "Y" in which and _apply(ax.get_yticklabels())
 
 
 class GridHelper(object):

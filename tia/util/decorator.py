@@ -3,8 +3,8 @@ from functools import wraps
 
 def lazy_property(fct, name=None):
     name = name or fct.__name__
-    attr_name = '_' + name
-    if attr_name == '_<lambda>':
+    attr_name = "_" + name
+    if attr_name == "_<lambda>":
         raise Exception("cannot assign <lambda> to lazy property")
 
     @property
@@ -22,15 +22,21 @@ class DeferredExecutionMixin(object):
     invoked '()'.
     Don't want to use this if you modify object variables between method calls (Deferred calls methods later)
     """
-    NOT_DEFERRED = ['apply']
+
+    NOT_DEFERRED = ["apply"]
 
     def __init__(self):
         self._deferred = []
 
     def __getattribute__(self, name):
         attr = super(DeferredExecutionMixin, self).__getattribute__(name)
-        if callable(attr) and not name.startswith('_') and name not in self.NOT_DEFERRED \
-                and not isinstance(attr, DeferredExecutionMixin):
+        if (
+            callable(attr)
+            and not name.startswith("_")
+            and name not in self.NOT_DEFERRED
+            and not isinstance(attr, DeferredExecutionMixin)
+        ):
+
             def wrapped(*args, **kwargs):
                 self._deferred.append(lambda: attr(*args, **kwargs))
                 return self
